@@ -17,11 +17,11 @@
 #include <ArduinoJson.h>
 #include "Fonts.h"
 
-#define HARDWARE_TYPE MD_MAX72XX::PAROLA_HW
+#define HARDWARE_TYPE MD_MAX72XX::FC16_HW
 #define  MAX_DEVICES 4
-#define CLK_PIN     D5 // or SCK
-#define DATA_PIN    D7 // or MOSI
-#define CS_PIN      D8 // or SS
+#define CLK_PIN     14 // or SCK
+#define DATA_PIN    13 // or MOSI
+#define CS_PIN      16 // or SS
 
 MD_Parola P = MD_Parola(HARDWARE_TYPE, CS_PIN, MAX_DEVICES);
 #define ARRAY_SIZE(x)  (sizeof(x)/sizeof(x[0]))
@@ -99,7 +99,7 @@ os_timer_t myTimer;
 #define analogPIN A0
 
 
-
+String fwindDegString(uint16_t);
 String weatherKey;
 String ipstring;
 String Text;
@@ -128,10 +128,6 @@ String country;
 int humidity;
 int pressure;
 float temp;
-String tempz;
-
-float lon;
-float lat;
 
 int clouds;
 float windSpeed;
@@ -147,12 +143,6 @@ String weatherStringz1;
 String weatherStringz2;
 
 String cityID;
-
-WiFiClient client;
-
-
-
-
 String chipID;
 
 void setup() {
@@ -164,6 +154,7 @@ void setup() {
   int WIFI_connected = false;
   Serial.begin(115200);
 
+  Serial.println();
 
   pinMode(LED_PIN, OUTPUT);
   pinMode(buttonPin, INPUT);
@@ -172,6 +163,7 @@ void setup() {
 
   //**** Network Config load
   EEPROM.begin(512); // define an EEPROM space of 512Bytes to store data
+
   CFG_saved = ReadConfig();
 
   //  Connect to WiFi acess point or start as Acess point
@@ -196,7 +188,7 @@ void setup() {
     if (WIFI_connected != WL_CONNECTED ) {
       Serial.println("Connection Failed! activating to AP mode...");
       Serial.print("Wifi ip:"); Serial.println(WiFi.localIP());
-      Serial.print("Email:"); Serial.println(config.email.c_str());
+      Serial.print("Email:"); Serial.println(config.cityid.c_str());
 
     }
   }
@@ -216,8 +208,8 @@ void setup() {
     config.Update_Time_Via_NTP_Every =  10;
     config.timeZone = 3;
     config.isDayLightSaving = true;
-    config.DeviceName = "API ключь";
-    config.email = "cityID";
+    config.DeviceName = "API ключ";
+    config.cityid = "cityID";
     WiFi.mode(WIFI_AP);
     WiFi.softAP(config.ssid.c_str());
     Serial.print("Wifi ip:"); Serial.println(WiFi.softAPIP());
@@ -338,10 +330,10 @@ void setup() {
 
   }
   getTime();
-  getWeatherData();
-  getWeatherDataz();
+  //getWeatherData();
+  //getWeatherDataz();
   weatherKey = config.DeviceName.c_str();
-  cityID = config.email.c_str();
+  cityID = config.cityid.c_str();
 }
 
 // the loop function runs over and over again forever
@@ -555,35 +547,38 @@ void scrollConnect() {
 // =======================================================================
 
 
+#include <Netwf.h>
 
-const char *weatherHost = "api.openweathermap.org";
+NF nsys;
+
+const char *weatherHostz = "api.openweathermap.org";
+
 
 void getWeatherData()
 {
-  Serial.print("connecting to "); Serial.println(weatherHost);
-  if (client.connect(weatherHost, 80)) {
-    client.println(String("GET /data/2.5/weather?id=") + cityID + "&units=metric&appid=" + weatherKey + "&lang=ru" + "\r\n" +
-                   "Host: " + weatherHost + "\r\nUser-Agent: ArduinoWiFi/1.1\r\n" +
-                   "Connection: close\r\n\r\n");
-  } else {
-    Serial.println("connection failed");
-    return;
-  }
+  String out = "No connect to network";
+  Serial.print("Current weather from "); Serial.println(weatherHostz);
+  String addr = "http://";
+  addr += weatherHostz;
+  addr += "/data/2.5/forecast?id=";
+  addr += cityID;
+  addr += "&units=metric&appid=";
+  addr += weatherKey;
+  addr += "&lang=ru&cnt=1";
+  out = nsys.http_client (addr);
+  //  Serial.println(out);
+
   String line;
-  int repeatCounter = 0;
-  while (!client.available() && repeatCounter < 10) {
-    delay(500);
-    Serial.println("w.");
-    repeatCounter++;
-  }
-  while (client.connected() && client.available()) {
-    char c = client.read();
+  uint16_t i = 0;
+  while ( i < out.length())
+  {
+    char c = out[i];
     if (c == '[' || c == ']') c = ' ';
     line += c;
+    i++;
   }
 
-  client.stop();
-  Serial.println(line + "\n");
+  Serial.println("Now " + line);
 
   DynamicJsonDocument jsonBuf;
   DeserializationError error = deserializeJson(jsonBuf, line);
@@ -596,78 +591,60 @@ void getWeatherData()
   JsonObject& root = jsonBuf.as<JsonObject>();
 
   //weatherMain = root["weather"]["main"].as<String>();
-  weatherDescription = root["weather"]["description"].as<String>();
+  weatherDescription = root["list"]["weather"]["description"].as<String>();
   weatherDescription.toLowerCase();
   //  weatherLocation = root["name"].as<String>();
   //  country = root["sys"]["country"].as<String>();
-  temp = root["main"]["temp"];
-  humidity = root["main"]["humidity"];
-  pressure = root["main"]["pressure"];
-  windSpeed = root["wind"]["speed"];
-  windDeg = root["wind"]["deg"];
-  clouds = root["clouds"]["all"];
-  String deg = String(char('~' + 25));
-  weatherString = "Сейчас " + String(temp, 0) + " ";
+  temp = root["list"]["main"]["temp"];
+  humidity = root["list"]["main"]["humidity"];
+  pressure = root["list"]["main"]["pressure"];
+  windSpeed = root["list"]["wind"]["speed"];
+  windDeg = root["list"]["wind"]["deg"];
+  clouds = root["list"]["clouds"]["all"];
+
+  weatherString = "Сейчас " + String(temp, 0) + "\xB0" + "C ";
   weatherString += weatherDescription;
-  weatherString += " Влажн " + String(humidity) + "% ";
-  weatherString += "Давл " + String(pressure / 1.3332239, 0) + " мм ";
+  weatherString += " Влажность " + String(humidity) + "% ";
+  weatherString += "Давление " + String(pressure / 1.3332239, 0) + " мм ";
   //  weatherString += "Облачность: " + String(clouds) + "% ";
 
-  String windDegString;
+  String windDegString = fwindDegString(windDeg);
 
-  if (windDeg >= 345 || windDeg <= 22) windDegString = "Северный";
-  if (windDeg >= 23 && windDeg <= 68) windDegString = "Северо-восточный";
-  if (windDeg >= 69 && windDeg <= 114) windDegString = "Восточный";
-  if (windDeg >= 115 && windDeg <= 160) windDegString = "Юго-восточный";
-  if (windDeg >= 161 && windDeg <= 206) windDegString = "Южный";
-  if (windDeg >= 207 && windDeg <= 252) windDegString = "Юго-западный";
-  if (windDeg >= 253 && windDeg <= 298) windDegString = "Западный";
-  if (windDeg >= 299 && windDeg <= 344) windDegString = "Северо-западный";
+  weatherString += "Ветер " + windDegString + " " + String(windSpeed, 0) + " м/с";
 
-
-  weatherString += "Ветер " + windDegString + " " + String(windSpeed, 1) + " м/с";
-
-
-
-
-  Serial.println("POGODA: " + String(temp, 0) + "\n");
+  Serial.println("Now: " + weatherString);
 }
 
 // =======================================================================
 // Берем ПРОГНОЗ!!! погоды с сайта openweathermap.org
 // =======================================================================
 
-
-
-const char *weatherHostz = "api.openweathermap.org";
-
 void getWeatherDataz()
 {
-  Serial.print("connecting to "); Serial.println(weatherHostz);
-  if (client.connect(weatherHostz, 80)) {
-    client.println(String("GET /data/2.5/forecast/daily?id=") + cityID + "&units=metric&appid=" + weatherKey + "&lang=ru" + "&cnt=2" + "\r\n" +
-                   "Host: " + weatherHostz + "\r\nUser-Agent: ArduinoWiFi/1.1\r\n" +
-                   "Connection: close\r\n\r\n");
-  } else {
-    Serial.println("connection failed");
-    return;
-  }
+  String out = "No connect to network";
+  Serial.print("Weather forecast for tomorrow from "); Serial.println(weatherHostz);
+  String addr = "http://";
+  addr += weatherHostz;
+  addr += "/data/2.5/forecast/daily?id=";
+  addr += cityID;
+  addr += "&units=metric&appid=";
+  addr += weatherKey;
+  addr += "&lang=ru&cnt=2";
+  out = nsys.http_client (addr);
+  //Serial.println(out);
+
   String line;
-  int repeatCounter = 0;
-  while (!client.available() && repeatCounter < 10) {
-    delay(500);
-    Serial.println("w.");
-    repeatCounter++;
-  }
-  while (client.connected() && client.available()) {
-    char c = client.read();
+  uint16_t i = 0;
+  while ( i < out.length())
+  {
+    char c = out[i];
     if (c == '[' || c == ']') c = ' ';
     line += c;
+    i++;
   }
-  tvoday(line);
-  Serial.println(tempz + "\n");
 
-  client.stop();
+  String tempz = tvoday(line);
+  Serial.println(tempz);
 
   DynamicJsonDocument jsonBuf;
   DeserializationError error = deserializeJson(jsonBuf, tempz);
@@ -679,44 +656,55 @@ void getWeatherDataz()
   }
   JsonObject& root = jsonBuf.as<JsonObject>();
 
-  lon = root ["coord"]["lon"];
-  lat = root ["coord"]["lat"];
+  //  lon = root ["coord"]["lon"];
+  //  lat = root ["coord"]["lat"];
 
-  float wSpeed = root ["speed"];
-  int wDeg = root ["deg"];
+  windSpeed = root ["speed"];
+  windDeg = root ["deg"];
   float tempMin = root ["temp"]["min"];
   float tempMax = root ["temp"]["max"];
   weatherDescription = root ["weather"]["description"].as<String>();
+  humidity = root["humidity"];
+  pressure = root["pressure"];
 
-  weatherStringz = "Завтра " + String(tempMin, 1) + " .. " + String(tempMax, 1) + " " + weatherDescription;
-  Serial.println("!!!!!PROGNOZ: " + weatherStringz + " Wind: " + wSpeed + " WindDeg: " + (wDeg) + "\n");
+  weatherStringz = "Завтра "
+                   + String(tempMin, 0) + " : "
+                   + String(tempMax, 0) + "\xB0" + "C "
+                   + weatherDescription
+                   + " Давление " + String(pressure / 1.3332239, 0) + " мм ";
+  Serial.println("!!!!!Forecast: " + weatherStringz + " Wind: " +  String(windSpeed, 0) + " WindDeg: " + (windDeg));
 
-  String windDegString;
+  String windDegString = fwindDegString(windDeg);
 
-  if (wDeg >= 345 || wDeg <= 22) windDegString = "Северный";
-  if (wDeg >= 23 && wDeg <= 68) windDegString = "Северо-восточный";
-  if (wDeg >= 69 && wDeg <= 114) windDegString = "Восточный";
-  if (wDeg >= 115 && wDeg <= 160) windDegString = "Юго-восточный";
-  if (wDeg >= 161 && wDeg <= 206) windDegString = "Южный";
-  if (wDeg >= 207 && wDeg <= 252) windDegString = "Юго-западный";
-  if (wDeg >= 253 && wDeg <= 298) windDegString = "Западный";
-  if (wDeg >= 299 && wDeg <= 344) windDegString = "Северо-западный";
-
-  weatherStringz1 = "Ветер " + windDegString + " " + String(wSpeed, 1) + " м/с";
+  weatherStringz1 = "Ветер " + windDegString + " " + String(windSpeed, 0) + " м/с";
 }
+
 // =======================================================================
-void tvoday(String line) {
+String tvoday(String line) {
   String s;
   int strt = line.indexOf('}');
   for (int i = 1; i <= 4; i++) {
     strt = line.indexOf('}', strt + 1);
   }
   s = line.substring(2 + strt, line.length());
-  tempz = s;
+  return s;
 }
 
 // =======================================================================
-
+String fwindDegString(uint16_t _wDeg)
+{
+  String _windDegString_;
+  if (_wDeg >= 345 || _wDeg <= 22)  _windDegString_ = "Северный";
+  if (_wDeg >= 23 && _wDeg <= 68)   _windDegString_ = "Северо-восточный";
+  if (_wDeg >= 69 && _wDeg <= 114)  _windDegString_ = "Восточный";
+  if (_wDeg >= 115 && _wDeg <= 160) _windDegString_ = "Юго-восточный";
+  if (_wDeg >= 161 && _wDeg <= 206) _windDegString_ = "Южный";
+  if (_wDeg >= 207 && _wDeg <= 252) _windDegString_ = "Юго-западный";
+  if (_wDeg >= 253 && _wDeg <= 298) _windDegString_ = "Западный";
+  if (_wDeg >= 299 && _wDeg <= 344) _windDegString_ = "Северо-западный";
+  return _windDegString_;
+}
+// =======================================================================
 
 String utf8rus(String source)
 {

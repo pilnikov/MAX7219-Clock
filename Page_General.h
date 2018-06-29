@@ -71,7 +71,7 @@ void send_general_html()
 		String temp = "";
 		for ( uint8_t i = 0; i < server.args(); i++ ) {
 			if (server.argName(i) == "devicename") config.DeviceName = urldecode(server.arg(i)); 
-      if (server.argName(i) == "email") config.email = urldecode(server.arg(i));
+      if (server.argName(i) == "email") config.cityid = urldecode(server.arg(i));
 		}
 
 		WriteConfig();
@@ -87,7 +87,7 @@ void send_general_configuration_values_html()
 {
 	String values ="";
 	values += "devicename|" +  (String)  config.DeviceName +  "|input\n";
-  values += "email|" +  (String)  config.email +  "|input\n";
+  values += "email|" +  (String)  config.cityid +  "|input\n";
  
 	server.send ( 200, "text/plain", values);
 	Serial.println(__FUNCTION__); 

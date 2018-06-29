@@ -29,7 +29,7 @@ struct strConfig {
   String password;                      // up to 32 Byte - EEPROM 96
   String ntpServerName;                 // up to 32 Byte - EEPROM 128
   String DeviceName;                    // up to 32 Byte - EEPROM 160
-  String email;                         // up to 32 Byte - EEPROM 192
+  String cityid;                        // up to 32 Byte - EEPROM 192
 
   // Application Settings here... from EEPROM 192 up to 511 (0 - 511)
   
@@ -158,7 +158,7 @@ void WriteConfig(){
   WriteStringToEEPROM(128, config.ntpServerName);
   WriteStringToEEPROM(160, config.DeviceName);
   
-  WriteStringToEEPROM(192, config.email);
+  WriteStringToEEPROM(192, config.cityid);
 
     // Application Settings here... from EEPROM 192 up to 511 (0 - 511)
 
@@ -195,7 +195,7 @@ boolean ReadConfig(){
     config.ntpServerName = ReadStringFromEEPROM(128);
     config.DeviceName = ReadStringFromEEPROM(160);
     
-    config.email = ReadStringFromEEPROM(192);
+    config.cityid = ReadStringFromEEPROM(192);
 
     // Application parameters here ... from EEPROM 192 to 511
     
@@ -214,24 +214,24 @@ void printConfig(){
 
   Serial.println("Printing Config");
 
-  Serial.printf("DHCP:%d\n", config.dhcp);
-  Serial.printf("DayLight:%d\n", config.isDayLightSaving);
+  Serial.printf("DHCP:%d\r\n", config.dhcp);
+  Serial.printf("DayLight:%d\r\n", config.isDayLightSaving);
 
-  Serial.printf("NTP update every %ld sec\n", config.Update_Time_Via_NTP_Every); // 4 Byte
-  Serial.printf("Timezone %ld\n", config.timeZone); // 4 Byte
+  Serial.printf("NTP update every %ld sec\r\n", config.Update_Time_Via_NTP_Every); // 4 Byte
+  Serial.printf("Timezone %ld\r\n", config.timeZone); // 4 Byte
 
-  Serial.printf("IP:%d.%d.%d.%d\n", config.IP[0],config.IP[1],config.IP[2],config.IP[3]);
-  Serial.printf("Mask:%d.%d.%d.%d\n", config.Netmask[0],config.Netmask[1],config.Netmask[2],config.Netmask[3]);
-  Serial.printf("Gateway:%d.%d.%d.%d\n", config.Gateway[0],config.Gateway[1],config.Gateway[2],config.Gateway[3]);
-  Serial.printf("DNS:%d.%d.%d.%d\n", config.DNS[0],config.DNS[1],config.DNS[2],config.DNS[3]);
+  Serial.printf("IP:%d.%d.%d.%d\r\n", config.IP[0],config.IP[1],config.IP[2],config.IP[3]);
+  Serial.printf("Mask:%d.%d.%d.%d\r\n", config.Netmask[0],config.Netmask[1],config.Netmask[2],config.Netmask[3]);
+  Serial.printf("Gateway:%d.%d.%d.%d\r\n", config.Gateway[0],config.Gateway[1],config.Gateway[2],config.Gateway[3]);
+  Serial.printf("DNS:%d.%d.%d.%d\r\n", config.DNS[0],config.DNS[1],config.DNS[2],config.DNS[3]);
   
  
-  Serial.printf("SSID:%s\n", config.ssid.c_str());
-  Serial.printf("PWD:%s\n", config.password.c_str());
-  Serial.printf("ntp ServerName:%s\n", config.ntpServerName.c_str());
-  Serial.printf("Device Name:%s\n", config.DeviceName.c_str());
+  Serial.printf("SSID:%s\r\n", config.ssid.c_str());
+  Serial.printf("PWD:%s\r\n", config.password.c_str());
+  Serial.printf("ntp ServerName:%s\r\n", config.ntpServerName.c_str());
+  Serial.printf("Device Name:%s\r\n", config.DeviceName.c_str());
   
-  Serial.printf("Email:%s\n", config.email.c_str());
+  Serial.printf("CityID:%s\r\n", config.cityid.c_str());
 
     // Application Settings here... from EEPROM 192 up to 511 (0 - 511)
 
