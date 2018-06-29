@@ -11,20 +11,20 @@ const char PAGE_AdminGeneralSettings[] PROGMEM =  R"=====(
 <form action="" method="post">
 <table border="0"  cellspacing="0" cellpadding="3" >
 <tr>
-	<td align="right">API ключь</td>
+	<td align="right">API key</td>
 	<td><input id="devicename" name="devicename" size="32" value=""></td>
 </tr>
 
 <tr>
-  <td align="right">cityID</td>
-  <td><input type="text" id="email" name="email" value=""></td>
+  <td align="right">City ID</td>
+  <td><input type="text" id="cityid" name="cityid" value=""></td>
 </tr>
 
 <tr><td colspan="2" align="center"><input type="submit" style="width:150px" class="btn btn--m btn--blue" value="Сохранить"></td></tr>
 </table>
 </form>
-<a href="http://openweathermap.org/api" align="center" target="_blank">API ключ берем тут</a><br><br>
-<a href="http://openweathermap.org/help/city_list.txt" align="center" target="_blank">Здесь находим cityID своего города</a><br>
+<a href="http://openweathermap.org/api" align="center" target="_blank">API key берем тут</a><br><br>
+<a href="http://bulk.openweathermap.org/sample/" align="center" target="_blank">Здесь находим City ID своего города</a><br>
 <br>
 <td align="center">Разработчик: Марсель Ахкамов</td><br>
 <td align="center">  danubanan@gmail.com</td><br>
@@ -71,7 +71,7 @@ void send_general_html()
 		String temp = "";
 		for ( uint8_t i = 0; i < server.args(); i++ ) {
 			if (server.argName(i) == "devicename") config.DeviceName = urldecode(server.arg(i)); 
-      if (server.argName(i) == "email") config.cityid = urldecode(server.arg(i));
+      if (server.argName(i) == "cityid") config.cityid = urldecode(server.arg(i));
 		}
 
 		WriteConfig();
@@ -87,7 +87,7 @@ void send_general_configuration_values_html()
 {
 	String values ="";
 	values += "devicename|" +  (String)  config.DeviceName +  "|input\n";
-  values += "email|" +  (String)  config.cityid +  "|input\n";
+  values += "cityid|" +  (String)  config.cityid +  "|input\n";
  
 	server.send ( 200, "text/plain", values);
 	Serial.println(__FUNCTION__); 
